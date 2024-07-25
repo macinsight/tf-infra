@@ -3,59 +3,31 @@ name: Terraform CI/CD
 on: [push, pull_request]
 
 jobs:
-  terraform:
-    name: Terraform Workflow
+  deploy:
+    name: Deploy to VPS
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3.1.1
-
-      - name: Init
-        run: terraform init
-
-      - name: Validate
-        id: validate
-        run: terraform validate
-        continue-on-error: true
-
-      - name: Display Validation Result
-        if: always()
-        run: |
-          echo "## Validation Result"
-          if [[ "${{ steps.validate.outcome }}" == "success" ]]; then
-            echo "✅ Validation succeeded!"
-          else
-            echo "❌ Validation failed!"
-          fi
-
       - name: Setup SSH Key
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: SCP Deploy
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: nogsantos/ssh-scp-deploy@v1.3.0
-        with:
-          host: ${{ secrets.VPS_IP }}
-          user: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          src: './'
-          remote: '/root/tf-infra'
-
-      - name: Run Terraform Apply on VPS
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: appleboy/ssh-action@v0.1.8
+      - name: SSH Deploy
+        uses: kostya-ten/ssh-server-deploy@v4
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /root/tf-infra/
+          private_key: ${{ secrets.VPS_SSH_KEY }}
+          scp_source: './'
+          scp_target: '/root/tf-infra/'
+          before_script: |
+            whoami
+          after_script: |
+            cd /root/tf-infra 
+            terraform init
             terraform apply -auto-approve
 
