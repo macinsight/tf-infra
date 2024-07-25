@@ -21,10 +21,3 @@ jobs:
       - name: Plan deployment
         id: plan
         run: terraform plan -no-color
-      
-      - name: Print output
-        run: echo ${{ steps.plan.outputs.stdout }}
-      - name: Errors
-        run: echo ${{ steps.plan.outputs.stderr }}
-      - name: Exitcode
-        run: echo ${{ steps.plan.outputs.exitcode }}
