@@ -14,13 +14,29 @@ jobs:
       - name: Set up Terraform
         id: init
         uses: hashicorp/setup-terraform@v3.1.1
-      
+
       - name: Init
         run: terraform init
+
       - name: Validate
         id: validate
-        run: terraform validate
-       - name: Add Validation Result to Job Summary
+        run: |
+          terraform validate > validate_output.txt
+          cat validate_output.txt
+          echo "::set-output name=result::$(cat validate_output.txt)"
+        continue-on-error: true
+
+      - name: Display Validation Result
+        if: always()
+        run: |
+          if [[ "${{ steps.validate.outcome }}" == "success" ]]; then
+            echo "✅ Validation succeeded!"
+          else
+            echo "❌ Validation failed!"
+            cat validate_output.txt
+          fi
+
+      - name: Add Validation Result to Job Summary
         if: always()
         run: |
           if [[ "${{ steps.validate.outcome }}" == "success" ]]; then
@@ -32,7 +48,22 @@ jobs:
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             cat validate_output.txt >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          fi
-      - name: Plan deployment
-        id: plan
-        run: terraform plan -no-color
+
+      - name: Annotate Validation Result
+        if: always()
+        run: |
+          if [[ "${{ steps.validate.outcome }}" == "success" ]]; then
+            echo "✅ Validation succeeded!"
+          else
+            echo "❌ Validation failed!"
+            while IFS= read -r line; do
+              echo "::error file=terraform.tf::${line}"
+            done < validate_output.txt
+
+      - name: Upload Validation Output
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: validation-output
+          path: validate_output.txt
+
