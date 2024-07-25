@@ -1,33 +1,38 @@
-name: Terraform CI/CD
+name: Terraform Lint and Apply
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  deploy:
-    name: Deploy to VPS
+  terraform:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Setup SSH Key
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3.1.1
 
-      - name: SSH Deploy
-        uses: kostya-ten/ssh-server-deploy@v4
-        with:
-          host: ${{ secrets.VPS_IP }}
-          username: ${{ secrets.VPS_USER }}
-          private_key: ${{ secrets.VPS_SSH_KEY }}
-          scp_source: './'
-          scp_target: '/root/tf-infra/'
-          before_script: |
-            whoami
-          after_script: |
-            cd /root/tf-infra 
-            terraform init
-            terraform apply -auto-approve
+    - name: Terraform Init
+      run: terraform init
 
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Fmt
+      run: terraform fmt -check
+
+    - name: Run Terraform Apply on VPS
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+        VPS_HOST: ${{ secrets.VPS_HOSTNAME }} 
+        VPS_USER: ${{ secrets.VPS_USER }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
+        ssh -i ~/.ssh/id_rsa $VPS_USER@$VPS_HOST 'cd /root/tf/ && git pull && terraform apply -auto-approve'
