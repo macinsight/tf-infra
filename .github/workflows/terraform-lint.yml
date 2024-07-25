@@ -18,7 +18,21 @@ jobs:
       - name: Init
         run: terraform init
       - name: Validate
+        id: validate
         run: terraform validate
+       - name: Add Validation Result to Job Summary
+        if: always()
+        run: |
+          if [[ "${{ steps.validate.outcome }}" == "success" ]]; then
+            echo "## Validation Result" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Validation succeeded!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Validation Result" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Validation failed!" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat validate_output.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
       - name: Plan deployment
         id: plan
         run: terraform plan -no-color
