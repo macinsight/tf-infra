@@ -15,3 +15,6 @@ terraform {
 provider "cloudflare" {
   api_token = var.cf_api_token
 }
+provider "docker" {
+  host = "unix:///var/run/docker.sock"
+}
