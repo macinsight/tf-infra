@@ -11,3 +11,7 @@ terraform {
   }
   required_version ">= 0.13"
 }
+
+provider "cloudflare" {
+  api_token = var.cf_api_token
+}
