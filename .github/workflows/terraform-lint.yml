@@ -15,9 +15,10 @@ jobs:
         id: init
         uses: hashicorp/setup-terraform@v3.1.1
       
-      - name: init
+      - name: Init
         run: terraform init
-
+      - name: Validate
+        run: terraform validate
       - name: Plan deployment
         id: plan
         run: terraform plan -no-color
