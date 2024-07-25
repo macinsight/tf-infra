@@ -1,5 +1,5 @@
 provider "docker" {
-  host = "ssh://user@your-vps-ip"
+  host = "ssh://root@server02.fsn.macinsight.net"
 }
 
 resource "docker_container" "nginx" {
