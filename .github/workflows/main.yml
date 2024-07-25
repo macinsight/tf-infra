@@ -34,13 +34,28 @@ jobs:
 
       - name: Setup SSH Key
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Terraform Apply
+      - name: SCP Deploy
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve
-        env:
-          TF_VAR_vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
+        uses: nogsantos/ssh-scp-deploy@v1.3.0
+        with:
+          host: ${{ secrets.VPS_IP }}
+          user: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          src: './'
+          remote: '/root/tf-infra'
+
+      - name: Run Terraform Apply on VPS
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /root/tf-infra/
+            terraform apply -auto-approve
 
