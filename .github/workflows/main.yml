@@ -36,17 +36,6 @@ jobs:
             cat validate_output.txt
           fi
 
-      - name: Annotate Validation Result
-        if: always()
-        run: |
-          if [[ "${{ steps.validate.outcome }}" == "success" ]]; then
-            echo "✅ Validation succeeded!"
-          else
-            echo "❌ Validation failed!"
-            while IFS= read -r line; do
-              echo "::error file=terraform.tf::${line}"
-            done < validate_output.txt
-
       - name: Setup SSH Key
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: webfactory/ssh-agent@v0.5.3
