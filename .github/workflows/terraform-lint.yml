@@ -23,7 +23,7 @@ jobs:
         run: |
           terraform validate > validate_output.txt
           cat validate_output.txt
-          echo "::set-output name=result::$(cat validate_output.txt)"
+          echo "result=$(<validate_output.txt)" >> $GITHUB_ENV
         continue-on-error: true
 
       - name: Display Validation Result
@@ -39,11 +39,10 @@ jobs:
       - name: Add Validation Result to Job Summary
         if: always()
         run: |
+          echo "## Validation Result" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ steps.validate.outcome }}" == "success" ]]; then
-            echo "## Validation Result" >> $GITHUB_STEP_SUMMARY
             echo "✅ Validation succeeded!" >> $GITHUB_STEP_SUMMARY
           else
-            echo "## Validation Result" >> $GITHUB_STEP_SUMMARY
             echo "❌ Validation failed!" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             cat validate_output.txt >> $GITHUB_STEP_SUMMARY
@@ -59,11 +58,4 @@ jobs:
             while IFS= read -r line; do
               echo "::error file=terraform.tf::${line}"
             done < validate_output.txt
-
-      - name: Upload Validation Output
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: validation-output
-          path: validate_output.txt
 
