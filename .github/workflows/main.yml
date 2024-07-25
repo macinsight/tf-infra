@@ -19,10 +19,7 @@ jobs:
 
       - name: Validate
         id: validate
-        run: |
-          terraform validate > validate_output.txt
-          cat validate_output.txt
-          echo "result=$(<validate_output.txt)" >> $GITHUB_ENV
+        run: terraform validate
         continue-on-error: true
 
       - name: Display Validation Result
@@ -33,7 +30,6 @@ jobs:
             echo "✅ Validation succeeded!"
           else
             echo "❌ Validation failed!"
-            cat validate_output.txt
           fi
 
       - name: Setup SSH Key
